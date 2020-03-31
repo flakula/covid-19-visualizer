@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import time
 import pandas as pd
@@ -6,48 +7,101 @@ import streamlit as st
 
 st.title('CoViD-19')
 
-ds = st.sidebar.radio("Dataset",options=["new_cases", "new_deaths", "total_cases", "total_deaths"])
-df = pd.read_csv(ds+".csv")
+dataset_array = ["new_cases", "new_deaths", "total_cases", "total_deaths"]
 
-if st.sidebar.checkbox("Print full data set"):
-	df
-	
-countries = []
-l = len(df) - 1
-st.write("Date: ",df.loc[l, "date"], "World: ", df.loc[l, "World"])
+mode = st.sidebar.radio("Select view", ["One country curve", "Countries comparison", "Resumen"])
 
-for country in df:
-	try:
-		if int(df.loc[l, country]) > 0:
-	 		countries.append((country, df.loc[l, country]))
-	except Exception as e:
- 		pass
+# dataframes_dict = {}
 
-if st.sidebar.checkbox("Top 10", True):
-	sorted_by_value = sorted(countries, key=lambda tup: 20947 - tup[1])
-	# for x, y in sorted_by_value[:10]:
-	# 	st.write(x,y)
-	countries = sorted_by_value[1:10]
-else:
-	countries = countries[1:]
+# @st.cache(persist=True)
+def read_csv(array):
+	dataframes_dict = {}
+	for dataset in dataset_array:
+		dataframes_dict[dataset] = pd.read_csv(dataset+".csv")
+	return dataframes_dict
+
+dataframes_dict = read_csv(dataset_array)
+
+# df_resumen = pd.DataFrame()
 
 # i = st.sidebar.slider("filter >=", 0, 10000, 100, step=100)
-i = 0
-d = pd.DataFrame(columns=[a for a,b in countries if b >= i])
-d.loc[0] = [b for a,b in countries if b > i]
-# st.write(df.loc[l][2:])
-st.write(d)
+i = st.sidebar.number_input('Insert a number', min_value=0, max_value=10000, value=100, step=100)
+top10 = st.sidebar.checkbox("Top-10")
 
-mode = st.sidebar.radio("Select view", ["One country curve", "Countries comparison"])
+df =  pd.DataFrame(columns = dataset_array)
+df_filtered_dict = {}
+top10_countries = {}
+for dataset_key in dataframes_dict:
+	countries = []
+	
+	# select top 10
+	last_pos = len(dataframes_dict[dataset_key]) -1
+	for country in dataframes_dict[dataset_key].columns[1:]:
+		try:  
+			if int(dataframes_dict[dataset_key].loc[last_pos,country]) >= i:
+				countries.append((country, int(dataframes_dict[dataset_key].loc[last_pos,country])))
+		except Exception as e:
+			pass
+	if top10:
+		countries = sorted(countries, key=lambda tup: - tup[1])[1:11]
+	else:
+		countries = sorted(countries, key=lambda tup: - tup[1])[1:]
+	
+	df_filtered = pd.DataFrame(columns=[a for a,b in countries])
+	df_filtered.loc[dataset_key] = [b for a,b in countries]
+
+	# st.write(df_filtered)
+	df_filtered_dict[dataset_key] = df_filtered
+
+	for a,b in countries:
+		top10_countries[a] = a
 
 if mode == "One country curve":
-	country = st.sidebar.selectbox("Country",d.columns)
-	plt.bar(range(l+1), df[country])
-	st.pyplot()
+	all_dataset = st.sidebar.checkbox("All in One")
+	country = st.sidebar.selectbox("Country", sorted(list(top10_countries)))
+	if all_dataset:
+		grid_size = (7,7)
+		# ax = plt.axes()
+
+		plt.subplot2grid(grid_size, (0, 0), rowspan=3, colspan=3)
+		plt.bar(range(last_pos+1), dataframes_dict["new_cases"][country])
+		plt.title("new_cases")
+
+		plt.subplot2grid(grid_size, (0, 4), rowspan=3, colspan=3)
+		plt.bar(range(last_pos+1), dataframes_dict["new_deaths"][country])
+		plt.title("new_deaths")
+		
+		plt.subplot2grid(grid_size, (4, 0), rowspan=3, colspan=3)
+		plt.bar(range(last_pos+1), dataframes_dict["total_cases"][country])
+		plt.title("total_cases")
+		
+		plt.subplot2grid(grid_size, (4, 4), rowspan=3, colspan=3)
+		plt.bar(range(last_pos+1), dataframes_dict["total_deaths"][country])
+		plt.title("total_deaths")
+		st.pyplot()
+		st.subheader(country)
+		st.write(	"new_cases", 	dataframes_dict["new_cases"		].loc[last_pos,country],
+					"new_deaths", 	dataframes_dict["new_deaths"	].loc[last_pos,country],
+					"total_cases", 	dataframes_dict["total_cases"	].loc[last_pos,country],
+					"total_deaths", dataframes_dict["total_deaths"	].loc[last_pos,country])
+
+	else:
+		selected_dataset = st.sidebar.radio("Dataset",options=dataset_array)
+		plt.bar(range(last_pos+1), dataframes_dict[selected_dataset][country])
+		st.pyplot()
+		st.subheader(country)
+		st.write(selected_dataset, dataframes_dict[selected_dataset].loc[last_pos,country])
+
 if mode == "Countries comparison":
 	# countries = countries[1:]
-	plt.bar(range(len(d.columns)), d.loc[0])
-	plt.xticks(range(len(d.columns)), d.columns)
+	selected_dataset = st.sidebar.radio("Dataset",options=dataset_array)
+	plt.bar(range(len(df_filtered_dict[selected_dataset].columns)), df_filtered_dict[selected_dataset].loc[selected_dataset])
+	plt.xticks(range(len(df_filtered_dict[selected_dataset].columns)), df_filtered_dict[selected_dataset].columns)
 	labels = plt.axes().get_xticklabels()
 	plt.setp(labels, rotation = 30.)
 	st.pyplot()
+	st.write(df_filtered_dict[selected_dataset])
+
+if mode == "Resumen":
+	for dataset_key in dataframes_dict:
+		st.write(df_filtered_dict[dataset_key])
