@@ -61,23 +61,12 @@ if mode == "One country curve":
 	country = st.sidebar.selectbox("Country", sorted(list(top10_countries)))
 	if all_dataset:
 		grid_size = (7,7)
-		# ax = plt.axes()
-
-		plt.subplot2grid(grid_size, (0, 0), rowspan=3, colspan=3)
-		plt.bar(range(last_pos+1), dataframes_dict["new_cases"][country])
-		plt.title("new_cases")
-
-		plt.subplot2grid(grid_size, (0, 4), rowspan=3, colspan=3)
-		plt.bar(range(last_pos+1), dataframes_dict["new_deaths"][country])
-		plt.title("new_deaths")
-		
-		plt.subplot2grid(grid_size, (4, 0), rowspan=3, colspan=3)
-		plt.bar(range(last_pos+1), dataframes_dict["total_cases"][country])
-		plt.title("total_cases")
-		
-		plt.subplot2grid(grid_size, (4, 4), rowspan=3, colspan=3)
-		plt.bar(range(last_pos+1), dataframes_dict["total_deaths"][country])
-		plt.title("total_deaths")
+		pos = [(0, 0),(0, 4),(4, 0),(4, 4)]
+		for i in range(4):
+			plt.subplot2grid(grid_size, pos[i], rowspan=3, colspan=3)
+			plt.bar(range(last_pos+1), dataframes_dict[dataset_array[i]][country])
+			plt.title(dataset_array[i])
+			
 		st.pyplot()
 		st.subheader(country)
 		st.write(	"new_cases", 	dataframes_dict["new_cases"		].loc[last_pos,country],
