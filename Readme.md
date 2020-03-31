@@ -1,5 +1,9 @@
 # Covid-19
 
-A data approach.
+A data approach by @flakula
 
-by @Flakula
+## Requirements
+
+* pandas
+* streamlit
+* matplotlib
