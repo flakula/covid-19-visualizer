@@ -71,6 +71,8 @@ else:
 	if dataframes_dict[dataset_key].loc[last_pos, "date"] < str(datetime.date.today()) and mode != "Readme":
 		if st.button("Data is old. Click here to fetch data."):
 			dataframes_dict, have_data = read_csv(dataset_array, True)
+			last_pos = len(dataframes_dict[dataset_key]) -1
+			
 
 	f = plt.figure()
 
@@ -84,8 +86,8 @@ else:
 				plt.subplot2grid(grid_size, pos[i], rowspan=3, colspan=3)
 				plt.bar(range(last_pos+1), dataframes_dict[dataset_array[i]][country])
 				plt.title(dataset_array[i])
-			# st.plotly_chart(f)
-			st.pyplot()
+			st.plotly_chart(f)
+			# st.pyplot()
 			p = pd.DataFrame(columns=dataframes_dict.keys())
 			for dataset_key in dataframes_dict:
 				p.loc[country, dataset_key] = dataframes_dict[dataset_key].loc[last_pos,country]
@@ -94,8 +96,8 @@ else:
 		else:
 			selected_dataset = st.sidebar.radio("Dataset",options=dataset_array)
 			plt.bar(range(last_pos+1), dataframes_dict[selected_dataset][country])
-			# st.plotly_chart(f)
-			st.pyplot()
+			st.plotly_chart(f)
+			# st.pyplot()
 			st.write(country,"|", selected_dataset, dataframes_dict[selected_dataset].loc[last_pos,country])
 
 	if mode == "Countries comparison":
@@ -106,8 +108,8 @@ else:
 		plt.xticks(range(len(df_filtered_dict[selected_dataset].columns)), df_filtered_dict[selected_dataset].columns)
 		labels = plt.axes().get_xticklabels()
 		plt.setp(labels, rotation = 30.) # this doesnt work with plotly
-		# st.plotly_chart(f)
-		st.pyplot()
+		st.plotly_chart(f)
+		# st.pyplot()
 		st.write(df_filtered_dict[selected_dataset])
 		st.write("World ", dataframes_dict[selected_dataset].loc[last_pos,"World"])
 
